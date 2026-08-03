@@ -284,7 +284,7 @@ body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue"
     <div class="card" style="padding:6px 14px"><div id="savingsLogList"></div></div>
     <div class="section-title">📊 消费复盘分析</div>
     <div id="moneyAnalysis"></div>
-    <div class="section-title">📝 消费心得<span class="more" onclick="openSheet('savingsNote')">+ 写心得</span></div>
+    <div class="section-title">💡 省钱心得<span class="more" onclick="openSheet('savingsNote')">+ 写心得</span></div>
     <div id="moneyWeekly"></div>
   </div>
   <div class="add-fab"><button onclick="openSheet('expense')">+ 快速记一笔</button></div>
@@ -517,18 +517,18 @@ function renderMoney(){
     ${topCats.length?`<div style="margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border)"><div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">本月分类占比</div>${topCats.map(([k,v])=>{const cat=CAT_MAP[k]||{icon:'📦',name:'其他',color:'#90A4AE'};const pctM=Math.round(v/mExp.reduce((a,e)=>a+e.amount,0)*100);return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:28px;height:28px;border-radius:7px;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:13px">${cat.icon}</span><div style="flex:1"><div style="font-size:12px;font-weight:500">${cat.name}</div><div class="progress-bar" style="height:5px;margin-top:3px"><div class="fill" style="width:${pctM}%;background:${cat.color}"></div></div></div><span style="font-size:12px;font-weight:600">¥${fmtMoney(v)}</span></div>`}).join('')}</div>`:''}`;
   const txs=[...state.expense].sort((a,b)=>b.time.localeCompare(a.time)).slice(0,30);
   const el=document.getElementById('txList');
-  if(!txs.length){el.innerHTML=`<div class="empty" style="padding:30px"><p>暂无消费记录</p></div>`;return}
-  el.innerHTML=txs.map(e=>{const cat=CAT_MAP[e.cat]||{icon:'📦',name:'其他',color:'#90A4AE'};return `<div class="tx-item"><div class="tx-icon" style="background:${cat.color}22">${cat.icon}</div><div class="tx-info"><div class="name">${esc(e.note||cat.name)}</div><div class="time">${fmtDate(e.time.slice(0,10))} · ${cat.name}</div></div><div class="tx-amount">-¥${fmtMoney(e.amount)}</div><div class="mini-btn" onclick="editExpense('${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div><div class="mini-btn" onclick="delExpense('${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div>`}).join('');
+  if(!txs.length){el.innerHTML=`<div class="empty" style="padding:30px"><p>暂无消费记录</p></div>`}
+  else{el.innerHTML=txs.map(e=>{const cat=CAT_MAP[e.cat]||{icon:'📦',name:'其他',color:'#90A4AE'};return `<div class="tx-item"><div class="tx-icon" style="background:${cat.color}22">${cat.icon}</div><div class="tx-info"><div class="name">${esc(e.note||cat.name)}</div><div class="time">${fmtDate(e.time.slice(0,10))} · ${cat.name}</div></div><div class="tx-amount">-¥${fmtMoney(e.amount)}</div><div class="mini-btn" onclick="editExpense('${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div><div class="mini-btn" onclick="delExpense('${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div>`}).join('')}
   // Savings log list
   const sLogs=[...state.savingsLog].sort((a,b)=>b.time.localeCompare(a.time));
   const sEl=document.getElementById('savingsLogList');
-  if(!sLogs.length){sEl.innerHTML=`<div class="empty" style="padding:24px"><p>暂无存钱记录</p></div>`}else{
-    sEl.innerHTML=sLogs.map(l=>`<div class="tx-item"><div class="tx-icon" style="background:var(--primary-light)">💰</div><div class="tx-info"><div class="name">${esc(l.note||'存入')}</div><div class="time">${fmtDate(l.time.slice(0,10))}</div></div><div class="tx-amount" style="color:var(--primary)">+¥${fmtMoney(l.amount)}</div><div class="mini-btn" onclick="editSavings('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div><div class="mini-btn" onclick="delSavings('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div>`).join('');
-  }
+  if(!sLogs.length){sEl.innerHTML=`<div class="empty" style="padding:24px"><p>暂无存钱记录</p></div>`}
+  else{sEl.innerHTML=sLogs.map(l=>`<div class="tx-item"><div class="tx-icon" style="background:var(--primary-light)">💰</div><div class="tx-info"><div class="name">${esc(l.note||'存入')}</div><div class="time">${fmtDate(l.time.slice(0,10))}</div></div><div class="tx-amount" style="color:var(--primary)">+¥${fmtMoney(l.amount)}</div><div class="mini-btn" onclick="editSavings('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div><div class="mini-btn" onclick="delSavings('${l.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div>`).join('')}
   // Auto consumption analysis
-  const analysis=generateAnalysis();
-  document.getElementById('moneyAnalysis').innerHTML=analysis;
-  renderWeekly('money');
+  document.getElementById('moneyAnalysis').innerHTML=generateAnalysis();
+  // Savings tips (note)
+  const mwEl=document.getElementById('moneyWeekly');
+  if(state.savings.note){mwEl.innerHTML=`<div class="card"><div style="font-size:13px;font-weight:600;color:var(--primary);margin-bottom:6px">💡 省钱心得</div><div style="font-size:13px;color:var(--text);line-height:1.6">${esc(state.savings.note)}</div></div>`}else{mwEl.innerHTML=`<div class="empty" style="padding:20px"><p style="font-size:13px">点击上方「+ 写心得」记录省钱感悟</p></div>`}
 }
 
 // ===== Render: Potential =====
