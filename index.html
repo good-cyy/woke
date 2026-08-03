@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+<title>自律工作台</title>
+
+<!-- PWA -->
+<link rel="manifest" href="manifest.json">
+<meta name="theme-color" content="#5BBA9A">
+<meta name="application-name" content="自律工作台">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="自律工作台">
+<meta name="format-detection" content="telephone=no">
+<link rel="apple-touch-icon" href="apple-touch-icon.png">
+<link rel="icon" type="image/png" href="favicon-32.png">
+<link rel="icon" type="image/png" sizes="192x192" href="icon-192.png">
+
+<style>
+:root{
+  --safe-top: env(safe-area-inset-top, 0px);
+  --safe-bottom: env(safe-area-inset-bottom, 0px);
+  --bg:#F7F8F6; --card:#FFFFFF; --text:#2D3436; --text2:#8A9099; --text3:#B5BBC1;
+  --primary:#5BBA9A; --primary-light:#E8F6F1; --primary-dark:#3DA088;
+  --accent:#F4A261; --accent-light:#FDF1E5; --danger:#E76F51; --danger-light:#FDEAE6;
+  --warning:#F2C94C; --info:#7CB9E8; --info-light:#E7F2FC;
+  --purple:#A78BFA; --purple-light:#F0EAFF; --pink:#F9A8D4; --pink-light:#FDE8F3;
+  --blue:#64B5F6; --blue-light:#E3F2FD; --indigo:#7986CB; --indigo-light:#E8EAF6;
+  --border:#EEF0ED;
+  --shadow:0 2px 12px rgba(91,186,154,0.06); --shadow-md:0 4px 20px rgba(0,0,0,0.06);
+  --radius:18px; --radius-sm:12px; --radius-lg:24px;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Helvetica Neue",sans-serif;background:var(--bg);color:var(--text);font-size:15px;line-height:1.5;-webkit-font-smoothing:antialiased}
+::-webkit-scrollbar{display:none}
+
+#app{max-width:480px;margin:0 auto;height:100vh;height:100dvh;display:flex;flex-direction:column;position:relative;background:var(--bg);overflow:hidden;padding-top:var(--safe-top)}
+.page-wrap{flex:1;overflow-y:auto;-webkit-overflow-scrolling:touch;padding-bottom:calc(84px + var(--safe-bottom))}
+.page{display:none;animation:fade .3s ease}
+.page.active{display:block}
+@keyframes fade{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+
+/* Tabbar - 5 items */
+.tabbar{position:absolute;bottom:0;left:0;right:0;max-width:480px;margin:0 auto;height:calc(64px + var(--safe-bottom));padding-bottom:var(--safe-bottom);background:rgba(255,255,255,0.93);backdrop-filter:blur(20px);-webkit-backdrop-filter:blur(20px);border-top:0.5px solid var(--border);display:flex;z-index:100}
+.tab{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:2px;color:var(--text3);transition:.25s;position:relative}
+.tab.active{color:var(--primary)}
+.tab svg{width:21px;height:21px;stroke-width:2}
+.tab span{font-size:9.5px;font-weight:500}
+
+.header{padding:16px 20px 6px;display:flex;align-items:center;justify-content:space-between}
+.header h1{font-size:23px;font-weight:700;letter-spacing:-0.5px}
+.header .date{font-size:12px;color:var(--text2);font-weight:500}
+
+.card{background:var(--card);border-radius:var(--radius);padding:16px;margin:0 16px 12px;box-shadow:var(--shadow)}
+.section-title{font-size:16px;font-weight:700;padding:10px 20px 8px;display:flex;align-items:center;justify-content:space-between}
+.section-title .more{font-size:13px;color:var(--primary);font-weight:500;cursor:pointer}
+
+.stat-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;margin:0 16px 12px}
+.stat-card{background:var(--card);border-radius:var(--radius);padding:15px 14px;box-shadow:var(--shadow);text-align:center;position:relative;overflow:hidden}
+.stat-card .num{font-size:26px;font-weight:700;letter-spacing:-1px}
+.stat-card .label{font-size:11.5px;color:var(--text2);margin-top:2px}
+.stat-card .icon{position:absolute;top:10px;right:10px;width:26px;height:26px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:13px}
+.stat-card.green .num{color:var(--primary)} .stat-card.green .icon{background:var(--primary-light);color:var(--primary)}
+.stat-card.orange .num{color:var(--accent)} .stat-card.orange .icon{background:var(--accent-light);color:var(--accent)}
+.stat-card.blue .num{color:var(--info)} .stat-card.blue .icon{background:var(--info-light);color:var(--info)}
+.stat-card.purple .num{color:var(--purple)} .stat-card.purple .icon{background:var(--purple-light);color:var(--purple)}
+.stat-card.pink .num{color:#E91E63} .stat-card.pink .icon{background:var(--pink-light);color:#E91E63}
+
+.progress-bar{height:8px;background:var(--border);border-radius:8px;overflow:hidden}
+.progress-bar .fill{height:100%;border-radius:8px;background:linear-gradient(90deg,var(--primary),var(--primary-dark));transition:width .6s ease}
+.progress-bar .fill.orange{background:linear-gradient(90deg,var(--accent),#E89150)}
+.progress-bar .fill.purple{background:linear-gradient(90deg,var(--purple),#8B6FE0)}
+.progress-bar .fill.blue{background:linear-gradient(90deg,var(--info),#5A9EDB)}
+.progress-bar .fill.pink{background:linear-gradient(90deg,#F48FB1,#E91E63)}
+
+.goal-card{background:var(--card);border-radius:var(--radius);padding:15px;margin:0 16px 12px;box-shadow:var(--shadow)}
+.goal-top{display:flex;align-items:center;gap:10px;margin-bottom:8px}
+.goal-check{width:26px;height:26px;border-radius:50%;border:2px solid var(--text3);display:flex;align-items:center;justify-content:center;flex-shrink:0;transition:.25s;cursor:pointer}
+.goal-check.done{background:var(--primary);border-color:var(--primary)}
+.goal-check.done svg{opacity:1}
+.goal-check svg{width:14px;height:14px;color:#fff;opacity:0;transition:.2s;stroke-width:3}
+.goal-info{flex:1;min-width:0}
+.goal-name{font-size:15px;font-weight:600}
+.goal-meta{font-size:11.5px;color:var(--text2);margin-top:1px}
+.goal-actions{display:flex;gap:2px}
+.goal-actions .mini-btn{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;color:var(--text3);transition:.2s;cursor:pointer}
+.goal-actions .mini-btn:active{background:var(--bg)}
+.goal-actions .mini-btn svg{width:16px;height:16px}
+.goal-bottom{display:flex;gap:8px;margin-top:8px;flex-wrap:wrap}
+.goal-tag{font-size:11px;padding:3px 10px;border-radius:20px;background:var(--primary-light);color:var(--primary-dark);font-weight:500}
+.goal-tag.gray{background:#F0F1EF;color:var(--text2)}
+.goal-tag.orange{background:var(--accent-light);color:var(--accent)}
+.goal-tag.blue{background:var(--info-light);color:var(--info)}
+.goal-tag.purple{background:var(--purple-light);color:var(--purple)}
+.goal-tag.pink{background:var(--pink-light);color:#D64F9E}
+
+.goal-reflect{margin-top:10px;background:var(--bg);border-radius:var(--radius-sm);padding:10px 12px;font-size:13px;color:var(--text2);line-height:1.5}
+.goal-reflect .rl-label{font-size:11px;color:var(--primary);font-weight:600;margin-bottom:4px;display:flex;align-items:center;gap:4px}
+.goal-reflect textarea{width:100%;border:none;background:transparent;font-size:13px;color:var(--text);resize:none;outline:none;font-family:inherit;line-height:1.5;min-height:36px}
+.goal-reflect textarea::placeholder{color:var(--text3)}
+
+.add-fab{position:fixed;bottom:calc(82px + var(--safe-bottom));left:50%;transform:translateX(-50%);width:100%;max-width:480px;display:flex;justify-content:center;z-index:90;pointer-events:none}
+.add-fab button{pointer-events:auto;background:var(--primary);color:#fff;border:none;padding:12px 28px;border-radius:24px;font-size:15px;font-weight:600;box-shadow:0 6px 20px rgba(91,186,154,0.35);display:flex;align-items:center;gap:6px;transition:.2s}
+.add-fab button:active{transform:scale(0.95)}
+
+.overlay{position:fixed;inset:0;background:rgba(0,0,0,0.3);z-index:200;opacity:0;pointer-events:none;transition:.3s;max-width:480px;margin:0 auto}
+.overlay.show{opacity:1;pointer-events:auto}
+.sheet{position:fixed;bottom:0;left:50%;transform:translateX(-50%) translateY(100%);width:100%;max-width:480px;background:#fff;border-radius:var(--radius-lg) var(--radius-lg) 0 0;padding:20px 20px calc(30px + var(--safe-bottom));z-index:201;transition:.35s cubic-bezier(.32,.72,0,1);max-height:85vh;overflow-y:auto}
+.sheet.show{transform:translateX(-50%) translateY(0)}
+.sheet-handle{width:36px;height:4px;background:var(--border);border-radius:4px;margin:0 auto 16px}
+.sheet h3{font-size:18px;font-weight:700;margin-bottom:16px;text-align:center}
+.field{margin-bottom:14px}
+.field label{display:block;font-size:13px;font-weight:600;color:var(--text);margin-bottom:6px}
+.field input,.field textarea,.field select{width:100%;border:1.5px solid var(--border);border-radius:var(--radius-sm);padding:11px 14px;font-size:14px;font-family:inherit;outline:none;transition:.2s;background:var(--bg)}
+.field input:focus,.field textarea:focus,.field select:focus{border-color:var(--primary);background:#fff}
+.field textarea{resize:none;min-height:70px}
+.field-row{display:flex;gap:10px}
+.field-row .field{flex:1}
+.btn-row{display:flex;gap:10px;margin-top:8px}
+.btn{flex:1;padding:13px;border-radius:var(--radius-sm);font-size:15px;font-weight:600;border:none;transition:.2s;cursor:pointer}
+.btn-primary{background:var(--primary);color:#fff}
+.btn-primary:active{background:var(--primary-dark)}
+.btn-ghost{background:var(--bg);color:var(--text2)}
+.btn-danger{background:var(--danger-light);color:var(--danger)}
+
+.chip-row{display:flex;flex-wrap:wrap;gap:8px}
+.chip{padding:7px 14px;border-radius:20px;font-size:13px;background:var(--bg);color:var(--text2);border:1.5px solid transparent;transition:.2s;cursor:pointer;font-weight:500}
+.chip.active{background:var(--primary-light);color:var(--primary-dark);border-color:var(--primary)}
+
+/* Money */
+.money-display{text-align:center;padding:16px 16px 12px}
+.money-display .amount{font-size:36px;font-weight:700;letter-spacing:-1.5px}
+.money-display .amount .currency{font-size:17px;font-weight:500;color:var(--text2);margin-right:2px}
+.money-display .label{font-size:13px;color:var(--text2);margin-top:4px}
+.money-row{display:flex;gap:10px;margin:0 16px 12px}
+.money-mini{flex:1;background:var(--card);border-radius:var(--radius);padding:13px;box-shadow:var(--shadow)}
+.money-mini .label{font-size:11.5px;color:var(--text2)}
+.money-mini .val{font-size:17px;font-weight:700;margin-top:3px}
+.money-mini .val.expense{color:var(--danger)}
+
+.tx-item{display:flex;align-items:center;gap:12px;padding:12px 0;border-bottom:0.5px solid var(--border)}
+.tx-item:last-child{border-bottom:none}
+.tx-icon{width:38px;height:38px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:17px;flex-shrink:0}
+.tx-info{flex:1;min-width:0}
+.tx-info .name{font-size:14px;font-weight:500}
+.tx-info .time{font-size:11.5px;color:var(--text2);margin-top:1px}
+.tx-amount{font-size:15px;font-weight:600}
+
+.chart-card{background:var(--card);border-radius:var(--radius);padding:16px;margin:0 16px 12px;box-shadow:var(--shadow)}
+.chart-bars{display:flex;align-items:flex-end;justify-content:space-between;height:110px;gap:6px;margin-top:12px}
+.chart-bar-col{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%}
+.chart-bar{width:100%;max-width:24px;border-radius:6px 6px 2px 2px;min-height:3px;transition:height .6s ease;position:relative}
+.chart-bar-label{font-size:10px;color:var(--text2)}
+
+/* Project */
+.proj-card{background:var(--card);border-radius:var(--radius);padding:15px;margin:0 16px 12px;box-shadow:var(--shadow)}
+.proj-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.proj-name{font-size:15px;font-weight:600}
+.proj-status{font-size:11px;padding:3px 10px;border-radius:20px;font-weight:500;cursor:pointer}
+.proj-status.todo{background:#F0F1EF;color:var(--text2)}
+.proj-status.doing{background:var(--primary-light);color:var(--primary-dark)}
+.proj-status.done{background:var(--primary-light);color:var(--primary)}
+.proj-desc{font-size:13px;color:var(--text2);line-height:1.5;margin-bottom:8px}
+.proj-steps{margin-bottom:8px}
+.proj-step{display:flex;align-items:flex-start;gap:8px;padding:4px 0;font-size:13px}
+.proj-step .dot{width:16px;height:16px;border-radius:50%;border:2px solid var(--text3);flex-shrink:0;margin-top:1px;transition:.2s;cursor:pointer}
+.proj-step .dot.done{background:var(--primary);border-color:var(--primary);position:relative}
+.proj-step .dot.done::after{content:'';position:absolute;width:6px;height:3px;border-left:2px solid #fff;border-bottom:2px solid #fff;transform:rotate(-45deg);top:3px;left:2px}
+.proj-step .stext{flex:1}
+.proj-step .stext.done{text-decoration:line-through;color:var(--text3)}
+.proj-footer{display:flex;align-items:center;justify-content:space-between;margin-top:6px}
+
+/* Empty */
+.empty{text-align:center;padding:40px 20px;color:var(--text3)}
+.empty svg{width:52px;height:52px;opacity:.3;margin-bottom:10px}
+.empty p{font-size:14px}
+.empty .et{font-weight:600;font-size:15px;color:var(--text2)}
+.empty .es{margin-top:4px}
+
+/* Toast */
+.toast{position:fixed;top:60px;left:50%;transform:translateX(-50%) translateY(-20px);background:rgba(45,52,54,0.9);color:#fff;padding:10px 22px;border-radius:20px;font-size:13px;z-index:999;opacity:0;transition:.3s;pointer-events:none}
+.toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+/* === Diary === */
+.mood-row{display:flex;justify-content:space-around;margin:0 16px 12px}
+.mood-btn{display:flex;flex-direction:column;align-items:center;gap:4px;padding:10px 6px;border-radius:var(--radius);background:var(--card);box-shadow:var(--shadow);transition:.2s;cursor:pointer;flex:1;margin:0 4px}
+.mood-btn .emoji{font-size:28px}
+.mood-btn .mood-label{font-size:11px;color:var(--text2)}
+.mood-btn.active{background:var(--primary-light);box-shadow:0 4px 16px rgba(91,186,154,0.15)}
+.mood-btn.active .mood-label{color:var(--primary-dark);font-weight:600}
+
+.diary-card{background:var(--card);border-radius:var(--radius);padding:15px;margin:0 16px 12px;box-shadow:var(--shadow)}
+.diary-top{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.diary-date{font-size:13px;font-weight:600;color:var(--text)}
+.diary-mood{font-size:20px}
+.diary-text{font-size:14px;color:var(--text);line-height:1.6;white-space:pre-wrap;word-break:break-word}
+.diary-tags{display:flex;gap:6px;margin-top:8px;flex-wrap:wrap}
+
+/* === News === */
+.news-tab-row{display:flex;gap:6px;padding:0 16px 12px;overflow-x:auto;scrollbar-width:none}
+.news-tab-row::-webkit-scrollbar{display:none}
+.news-tab{padding:7px 16px;border-radius:20px;font-size:13px;font-weight:500;background:var(--card);color:var(--text2);white-space:nowrap;box-shadow:var(--shadow);transition:.2s;cursor:pointer}
+.news-tab.active{background:var(--primary);color:#fff}
+
+.news-item{display:flex;gap:12px;padding:13px 0;border-bottom:0.5px solid var(--border)}
+.news-item:last-child{border-bottom:none}
+.news-source{font-size:11px;color:var(--primary);font-weight:600;margin-bottom:3px;display:flex;align-items:center;gap:4px}
+.news-title{font-size:14.5px;font-weight:600;line-height:1.4;color:var(--text)}
+.news-desc{font-size:12.5px;color:var(--text2);margin-top:4px;line-height:1.4;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden}
+.news-time{font-size:11px;color:var(--text3);margin-top:5px}
+.news-loading{text-align:center;padding:40px;color:var(--text3);font-size:14px}
+.news-loading .spinner{width:28px;height:28px;border:3px solid var(--border);border-top-color:var(--primary);border-radius:50%;animation:spin .8s linear infinite;margin:0 auto 12px}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* === Weekly review === */
+.weekly-section{margin:8px 16px 12px}
+.weekly-card{background:var(--card);border-radius:var(--radius);padding:15px;box-shadow:var(--shadow);margin-bottom:10px}
+.weekly-card .wc-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:8px}
+.weekly-card .wc-title{font-size:14px;font-weight:600;display:flex;align-items:center;gap:6px}
+.weekly-card .wc-date{font-size:11px;color:var(--text2)}
+.weekly-card .wc-content{font-size:13px;color:var(--text2);line-height:1.6;white-space:pre-wrap}
+
+/* Long-term goal */
+.lt-card{background:var(--card);border-radius:var(--radius);padding:15px;margin:0 16px 12px;box-shadow:var(--shadow);border-left:3px solid var(--primary)}
+.lt-card.doing{border-left-color:var(--accent)}
+.lt-card.done{border-left-color:var(--purple)}
+.lt-header{display:flex;align-items:center;justify-content:space-between;margin-bottom:6px}
+.lt-name{font-size:15px;font-weight:600}
+.lt-deadline{font-size:11px;color:var(--text2);margin-top:2px}
+.lt-milestones{margin:8px 0}
+.lt-milestone{display:flex;align-items:flex-start;gap:8px;padding:3px 0;font-size:12.5px}
+.lt-milestone .ms-dot{width:14px;height:14px;border-radius:50%;border:2px solid var(--text3);flex-shrink:0;margin-top:2px;cursor:pointer;position:relative}
+.lt-milestone .ms-dot.done{background:var(--primary);border-color:var(--primary)}
+.lt-milestone .ms-dot.done::after{content:'';position:absolute;width:5px;height:3px;border-left:1.5px solid #fff;border-bottom:1.5px solid #fff;transform:rotate(-45deg);top:2px;left:1.5px}
+
+.flex-between{display:flex;align-items:center;justify-content:space-between}
+.mb8{margin-bottom:8px} .mt8{margin-top:8px} .mt12{margin-top:12px}
+.tag-dot{width:7px;height:7px;border-radius:50%;display:inline-block}
+</style>
+</head>
+<body>
+<div id="app">
+
+<!-- PAGE 1: 学习打卡 -->
+<div class="page" id="page-study">
+  <div class="page-wrap">
+    <div class="header"><div><h1>学习打卡</h1><div class="date" id="todayDate1"></div></div></div>
+    <div class="stat-grid" id="studyStats"></div>
+    <div class="section-title">学习目标<span class="more" onclick="openSheet('study')">+ 新增</span></div>
+    <div id="studyList"></div>
+    <div class="section-title">📊 每周复盘<span class="more" onclick="openSheet('weekly','study')">+ 写复盘</span></div>
+    <div id="studyWeekly"></div>
+  </div>
+  <div class="add-fab"><button onclick="openSheet('study')">+ 新增学习目标</button></div>
+</div>
+
+<!-- PAGE 2: 生活自律 -->
+<div class="page" id="page-life">
+  <div class="page-wrap">
+    <div class="header"><div><h1>生活自律</h1><div class="date" id="todayDate2"></div></div></div>
+    <div class="stat-grid" id="lifeStats"></div>
+    <div class="section-title">自律习惯<span class="more" onclick="openSheet('life')">+ 新增</span></div>
+    <div id="lifeList"></div>
+    <div class="section-title">📊 每周复盘<span class="more" onclick="openSheet('weekly','life')">+ 写复盘</span></div>
+    <div id="lifeWeekly"></div>
+  </div>
+  <div class="add-fab"><button onclick="openSheet('life')">+ 新增自律习惯</button></div>
+</div>
+
+<!-- PAGE 3: 攒钱计划 -->
+<div class="page" id="page-money">
+  <div class="page-wrap">
+    <div class="header"><div><h1>攒钱计划</h1><div class="date" id="todayDate3"></div></div></div>
+    <div class="card" id="savingsCard"></div>
+    <div class="money-row" id="moneyMini"></div>
+    <div class="chart-card" id="chartCard"></div>
+    <div class="section-title">消费流水<span class="more" onclick="openSheet('expense')">+ 记一笔</span></div>
+    <div class="card" style="padding:6px 14px"><div id="txList"></div></div>
+    <div class="section-title">💡 消费复盘<span class="more" onclick="openSheet('weekly','money')">+ 写复盘</span></div>
+    <div id="moneyWeekly"></div>
+  </div>
+  <div class="add-fab"><button onclick="openSheet('expense')">+ 快速记一笔</button></div>
+</div>
+
+<!-- PAGE 4: 潜力发展 -->
+<div class="page" id="page-potential">
+  <div class="page-wrap">
+    <div class="header"><div><h1>潜力发展</h1><div class="date" id="todayDate4"></div></div></div>
+    <div class="stat-grid" id="potStats"></div>
+    <div class="section-title">🚀 项目规划<span class="more" onclick="openSheet('project')">+ 新增</span></div>
+    <div id="projList"></div>
+    <div class="section-title">🎯 长期目标<span class="more" onclick="openSheet('longterm')">+ 新增目标</span></div>
+    <div id="ltList"></div>
+    <div class="section-title">📈 成长复盘<span class="more" onclick="openSheet('weekly','potential')">+ 写复盘</span></div>
+    <div id="potWeekly"></div>
+  </div>
+  <div class="add-fab"><button onclick="openSheet('project')">+ 新增项目</button></div>
+</div>
+
+<!-- PAGE 5: 心情日记 -->
+<div class="page" id="page-diary">
+  <div class="page-wrap">
+    <div class="header"><div><h1>心情日记</h1><div class="date" id="todayDate5"></div></div></div>
+    <div class="card">
+      <div style="font-size:14px;font-weight:600;margin-bottom:10px">😊 今天心情如何？</div>
+      <div class="mood-row" id="moodRow"></div>
+      <div class="field mt12"><textarea id="diaryInput" placeholder="写点什么吧... 这是你的私人树洞 🌳" style="min-height:120px;background:var(--bg)"></textarea></div>
+      <div class="field">
+        <label>标签（可选）</label>
+        <div class="chip-row" id="diaryTags"></div>
+      </div>
+      <button class="btn btn-primary" onclick="saveDiary()">记录今天</button>
+    </div>
+    <div class="section-title">📖 历史日记</div>
+    <div id="diaryList"></div>
+  </div>
+</div>
+
+<!-- PAGE 6: 热点资讯 -->
+<div class="page" id="page-news">
+  <div class="page-wrap">
+    <div class="header"><div><h1>热点资讯</h1><div class="date" id="todayDate6"></div></div></div>
+    <div class="news-tab-row" id="newsTabs"></div>
+    <div id="newsList"></div>
+  </div>
+</div>
+
+<!-- Tabbar -->
+<div class="tabbar">
+  <div class="tab active" data-page="study" onclick="switchPage('study')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M2 3h6a4 4 0 014 4v14a3 3 0 00-3-3H2zM22 3h-6a4 4 0 00-4 4v14a3 3 0 013-3h7z"/></svg>
+    <span>学习</span>
+  </div>
+  <div class="tab" data-page="life" onclick="switchPage('life')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 7L9 18l-5-5"/></svg>
+    <span>自律</span>
+  </div>
+  <div class="tab" data-page="money" onclick="switchPage('money')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 1v22M17 5H9.5a3.5 3.5 0 000 7h5a3.5 3.5 0 010 7H6"/></svg>
+    <span>攒钱</span>
+  </div>
+  <div class="tab" data-page="potential" onclick="switchPage('potential')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2l2.4 7.4H22l-6.2 4.5 2.4 7.4L12 16.8l-6.2 4.5 2.4-7.4L2 9.4h7.6z"/></svg>
+    <span>潜力</span>
+  </div>
+  <div class="tab" data-page="diary" onclick="switchPage('diary')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20.8 4.6a5.5 5.5 0 00-7.8 0L5 12.7V19h6.3l8.2-8.2a5.5 5.5 0 000-7.8l-1.4-1.4z"/><path d="M16 8l2 2"/></svg>
+    <span>日记</span>
+  </div>
+  <div class="tab" data-page="news" onclick="switchPage('news')">
+    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M4 4h12a2 2 0 012 2v14a2 2 0 01-2 2H4zM18 8h2a2 2 0 012 2v8a2 2 0 01-2 2M6 8h6M6 12h6M6 16h4"/></svg>
+    <span>热点</span>
+  </div>
+</div>
+
+</div>
+
+<div class="overlay" id="overlay" onclick="closeSheet()"></div>
+<div class="sheet" id="sheet"></div>
+<div class="toast" id="toast"></div>
+
+<script>
+// ===== Storage =====
+const DB={get(k,d){try{const v=localStorage.getItem('zlv3_'+k);return v?JSON.parse(v):d}catch(e){return d}},set(k,v){localStorage.setItem('zlv3_'+k,JSON.stringify(v))}};
+const CATS=[{key:'food',name:'餐饮美食',icon:'🍜',color:'#FF8A65'},{key:'transport',name:'交通车费',icon:'🚌',color:'#64B5F6'},{key:'shopping',name:'日常购物',icon:'🛍️',color:'#BA68C8'},{key:'daily',name:'生活用品',icon:'🧴',color:'#4DB6AC'},{key:'fun',name:'娱乐消费',icon:'🎮',color:'#FFB74D'},{key:'health',name:'医疗健康',icon:'💊',color:'#E57373'},{key:'study',name:'学习支出',icon:'📚',color:'#81C784'},{key:'other',name:'其他支出',icon:'📦',color:'#90A4AE'}];
+const CAT_MAP={};CATS.forEach(c=>CAT_MAP[c.key]=c);
+const today=()=>new Date().toISOString().slice(0,10);
+const now=()=>new Date().toISOString().slice(0,16);
+function uid(){return Date.now().toString(36)+Math.random().toString(36).slice(2,6)}
+function toast(msg){const t=document.getElementById('toast');t.textContent=msg;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),1800)}
+function fmtDate(d){const days=['日','一','二','三','四','五','六'];const dt=new Date(d);return`${dt.getMonth()+1}月${dt.getDate()}日 周${days[dt.getDay()]}`}
+function fmtMoney(n){return Number(n||0).toLocaleString('zh-CN',{minimumFractionDigits:0,maximumFractionDigits:2})}
+function esc(s){return(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function weekKey(d){const dt=d?new Date(d):new Date();const y=dt.getFullYear();const oneJan=new Date(y,0,1);const week=Math.ceil(((dt-oneJan)/86400000+oneJan.getDay()+1)/7);return`${y}-W${week}`}
+
+let state={
+  study:DB.get('study',[]), life:DB.get('life',[]),
+  expense:DB.get('expense',[]), customCats:DB.get('customCats',[]),
+  savings:DB.get('savings',{goal:10000,current:0,note:''}), savingsLog:DB.get('savingsLog',[]),
+  projects:DB.get('projects',[]), longterm:DB.get('longterm',[]),
+  diary:DB.get('diary',[]), weekly:DB.get('weekly',[])
+};
+function save(){DB.set('study',state.study);DB.set('life',state.life);DB.set('expense',state.expense);DB.set('customCats',state.customCats);DB.set('savings',state.savings);DB.set('savingsLog',state.savingsLog);DB.set('projects',state.projects);DB.set('longterm',state.longterm);DB.set('diary',state.diary);DB.set('weekly',state.weekly)}
+
+function consecutive(checkin){let c=0;let d=new Date();while(true){const ds=d.toISOString().slice(0,10);if(checkin[ds]){c++;d.setDate(d.getDate()-1)}else break}return c}
+function totalDays(checkin){return Object.keys(checkin).filter(k=>checkin[k]).length}
+
+// Weekly completion rate for a goal
+function weekRate(checkin){
+  const d=new Date();let done=0,total=0;
+  for(let i=0;i<7;i++){const ds=d.toISOString().slice(0,10);total++;if(checkin[ds])done++;d.setDate(d.getDate()-1)}
+  return{done,total,pct:Math.round(done/total*100)}
+}
+
+// ===== Tab Switching =====
+function switchPage(p){
+  document.querySelectorAll('.page').forEach(el=>el.classList.remove('active'));
+  document.getElementById('page-'+p).classList.add('active');
+  document.querySelectorAll('.tab').forEach(t=>t.classList.toggle('active',t.dataset.page===p));
+  document.querySelector('#page-'+p+' .page-wrap').scrollTop=0;
+  if(p==='news')loadNews(currentNewsTab);
+}
+
+// ===== Render: Study =====
+function renderStudy(){
+  const list=state.study.filter(s=>!s.archived);const td=today();
+  const checkedToday=list.filter(s=>s.checkin[td]).length;
+  const allTotal=list.reduce((a,s)=>a+totalDays(s.checkin),0);
+  const maxStreak=list.reduce((a,s)=>Math.max(a,consecutive(s.checkin)),0);
+  const weekPct=list.length?Math.round(list.reduce((a,s)=>a+weekRate(s.checkin).pct,0)/list.length):0;
+  document.getElementById('studyStats').innerHTML=`
+    <div class="stat-card green"><div class="icon">📖</div><div class="num">${checkedToday}/${list.length}</div><div class="label">今日打卡</div></div>
+    <div class="stat-card orange"><div class="icon">🔥</div><div class="num">${maxStreak}</div><div class="label">最长连续(天)</div></div>
+    <div class="stat-card blue"><div class="icon">📊</div><div class="num">${weekPct}%</div><div class="label">本周完成率</div></div>
+    <div class="stat-card purple"><div class="icon">🎯</div><div class="num">${allTotal}</div><div class="label">累计打卡</div></div>`;
+  const el=document.getElementById('studyList');
+  if(!list.length){el.innerHTML=emptyHTML('还没有学习目标','点击下方按钮添加第一个目标');return}
+  el.innerHTML=list.map(s=>{
+    const cs=consecutive(s.checkin),td_count=totalDays(s.checkin),done=s.checkin[td];
+    const wr=weekRate(s.checkin);
+    return `<div class="goal-card">
+      <div class="goal-top">
+        <div class="goal-check ${done?'done':''}" onclick="toggleCheckin('study','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="goal-info"><div class="goal-name">${esc(s.name)}</div><div class="goal-meta">${s.period==='daily'?'每日打卡':'每周打卡'} · 创建于 ${fmtDate(s.created||td)}</div></div>
+        <div class="goal-actions"><div class="mini-btn" onclick="editItem('study','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div>
+        <div class="mini-btn" onclick="delItem('study','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div>
+      </div>
+      <div class="goal-bottom">
+        <span class="goal-tag ${done?'':'gray'}">${done?'今日已打卡':'今日未打卡'}</span>
+        <span class="goal-tag orange">🔥${cs}天</span>
+        <span class="goal-tag blue">累计${td_count}天</span>
+        <span class="goal-tag purple">本周${wr.done}/${wr.total}</span>
+      </div>
+      <div style="margin-top:8px"><div class="flex-between mb8"><span style="font-size:11px;color:var(--text2)">本周完成进度</span><span style="font-size:11px;font-weight:600;color:var(--primary)">${wr.pct}%</span></div><div class="progress-bar"><div class="fill" style="width:${wr.pct}%"></div></div></div>
+      <div class="goal-reflect"><div class="rl-label">📝 今日反思总结</div><textarea placeholder="记录今日学习心得、复盘总结、遇到的问题..." onblur="saveReflect('study','${s.id}',this.value)">${esc(s.reflect?.[td]||'')}</textarea></div>
+    </div>`;
+  }).join('');
+  renderWeekly('study');
+}
+
+// ===== Render: Life =====
+function renderLife(){
+  const list=state.life.filter(s=>!s.archived&&s.enabled!==false);const td=today();
+  const checkedToday=list.filter(s=>s.checkin[td]).length;
+  const maxStreak=list.reduce((a,s)=>Math.max(a,consecutive(s.checkin)),0);
+  const allTotal=list.reduce((a,s)=>a+totalDays(s.checkin),0);
+  const weekPct=list.length?Math.round(list.reduce((a,s)=>a+weekRate(s.checkin).pct,0)/list.length):0;
+  document.getElementById('lifeStats').innerHTML=`
+    <div class="stat-card green"><div class="icon">✅</div><div class="num">${checkedToday}/${list.length}</div><div class="label">今日完成</div></div>
+    <div class="stat-card orange"><div class="icon">🔥</div><div class="num">${maxStreak}</div><div class="label">最长坚持(天)</div></div>
+    <div class="stat-card blue"><div class="icon">📊</div><div class="num">${weekPct}%</div><div class="label">本周完成率</div></div>
+    <div class="stat-card purple"><div class="icon">📅</div><div class="num">${allTotal}</div><div class="label">累计打卡</div></div>`;
+  const el=document.getElementById('lifeList');
+  if(!list.length){el.innerHTML=emptyHTML('还没有自律习惯','添加第一个习惯，开始自律之旅');return}
+  el.innerHTML=list.map(s=>{
+    const cs=consecutive(s.checkin),td_count=totalDays(s.checkin),done=s.checkin[td];
+    const wr=weekRate(s.checkin);
+    // streak warning
+    const yesterday=new Date();yesterday.setDate(yesterday.getDate()-1);
+    const ys=yesterday.toISOString().slice(0,10);
+    const broken=cs===0&&!done&&td_count>0;
+    return `<div class="goal-card">
+      <div class="goal-top">
+        <div class="goal-check ${done?'done':''}" onclick="toggleCheckin('life','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M20 6L9 17l-5-5"/></svg></div>
+        <div class="goal-info"><div class="goal-name">${esc(s.name)}</div><div class="goal-meta">坚持了 ${td_count} 天${s.reminder?` · ⏰${s.reminder}`:''}</div></div>
+        <div class="goal-actions"><div class="mini-btn" onclick="editItem('life','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div>
+        <div class="mini-btn" onclick="delItem('life','${s.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div>
+      </div>
+      <div class="goal-bottom">
+        <span class="goal-tag ${done?'':'gray'}">${done?'今日已完成':'今日待完成'}</span>
+        <span class="goal-tag orange">🔥${cs}天</span>
+        <span class="goal-tag blue">累计${td_count}天</span>
+        <span class="goal-tag purple">本周${wr.done}/${wr.total}</span>
+        ${broken?`<span class="goal-tag pink">⚠️昨日断签</span>`:''}
+      </div>
+      <div style="margin-top:8px"><div class="flex-between mb8"><span style="font-size:11px;color:var(--text2)">本周完成进度</span><span style="font-size:11px;font-weight:600;color:var(--primary)">${wr.pct}%</span></div><div class="progress-bar"><div class="fill ${broken?'pink':''}" style="width:${wr.pct}%"></div></div></div>
+      <div class="goal-reflect"><div class="rl-label">📝 今日复盘</div><textarea placeholder="今日习惯执行情况、感受、改进点..." onblur="saveReflect('life','${s.id}',this.value)">${esc(s.reflect?.[td]||'')}</textarea></div>
+    </div>`;
+  }).join('');
+  renderWeekly('life');
+}
+
+// ===== Render: Money =====
+function renderMoney(){
+  const s=state.savings;const pct=s.goal>0?Math.min(100,(s.current/s.goal*100)):0;
+  document.getElementById('savingsCard').innerHTML=`
+    <div class="flex-between mb8"><span style="font-size:13px;color:var(--text2)">💰 攒钱目标</span><span class="more" style="font-size:12px;color:var(--primary);font-weight:500;cursor:pointer" onclick="openSheet('savings')">设置</span></div>
+    <div class="money-display"><div class="amount"><span class="currency">¥</span>${fmtMoney(s.current)}<span style="font-size:15px;color:var(--text3);font-weight:400"> / ${fmtMoney(s.goal)}</span></div><div class="label">已攒 ${pct.toFixed(0)}% · 还差 ¥${fmtMoney(Math.max(0,s.goal-s.current))}</div></div>
+    <div class="progress-bar"><div class="fill" style="width:${pct}%"></div></div>
+    <div style="display:flex;gap:8px;margin-top:12px"><button class="btn btn-primary" style="font-size:13px;padding:9px" onclick="openSheet('addSavings')">+ 存钱</button><button class="btn btn-ghost" style="font-size:13px;padding:9px" onclick="openSheet('savingsNote')">省钱心得</button></div>
+    ${s.note?`<div class="goal-reflect mt12"><div class="rl-label">💡 省钱心得</div>${esc(s.note)}</div>`:''}`;
+  const td=today();
+  const tExp=state.expense.filter(e=>e.time.slice(0,10)===td).reduce((a,e)=>a+e.amount,0);
+  const now7=new Date();now7.setDate(now7.getDate()-6);
+  const wExp=state.expense.filter(e=>new Date(e.time.slice(0,10))>=new Date(now7.toISOString().slice(0,10))).reduce((a,e)=>a+e.amount,0);
+  const mExp=state.expense.filter(e=>e.time.slice(0,7)===td.slice(0,7)).reduce((a,e)=>a+e.amount,0);
+  document.getElementById('moneyMini').innerHTML=`<div class="money-mini"><div class="label">今日消费</div><div class="val expense">¥${fmtMoney(tExp)}</div></div><div class="money-mini"><div class="label">本周消费</div><div class="val expense">¥${fmtMoney(wExp)}</div></div><div class="money-mini"><div class="label">本月消费</div><div class="val expense">¥${fmtMoney(mExp)}</div></div>`;
+  // Category breakdown this month
+  const monthExp=state.expense.filter(e=>e.time.slice(0,7)===td.slice(0,7));
+  const catTotals={};monthExp.forEach(e=>{catTotals[e.cat]=(catTotals[e.cat]||0)+e.amount});
+  const topCats=Object.entries(catTotals).sort((a,b)=>b[1]-a[1]).slice(0,4);
+  // Chart 7 days
+  const days=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);const ds=d.toISOString().slice(0,10);const amt=state.expense.filter(e=>e.time.slice(0,10)===ds).reduce((a,e)=>a+e.amount,0);days.push({label:(d.getMonth()+1)+'/'+d.getDate(),val:amt})}
+  const maxV=Math.max(...days.map(d=>d.val),1);
+  const colors=['#5BBA9A','#F4A261','#7CB9E8','#A78BFA','#F9A8D4','#E76F51','#64B5F6'];
+  document.getElementById('chartCard').innerHTML=`
+    <div class="flex-between"><span style="font-size:14px;font-weight:600">📊 近7日消费趋势</span><span style="font-size:12px;color:var(--text2)">日均 ¥${fmtMoney(days.reduce((a,d)=>a+d.val,0)/7)}</span></div>
+    <div class="chart-bars">${days.map((d,i)=>`<div class="chart-bar-col"><div style="flex:1;display:flex;align-items:flex-end;width:100%;justify-content:center"><div class="chart-bar" style="height:${d.val/maxV*100}%;background:${colors[i]}"></div></div><div class="chart-bar-label">${d.label}</div></div>`).join('')}</div>
+    ${topCats.length?`<div style="margin-top:14px;padding-top:12px;border-top:0.5px solid var(--border)"><div style="font-size:12px;font-weight:600;color:var(--text2);margin-bottom:8px">本月分类占比</div>${topCats.map(([k,v])=>{const cat=CAT_MAP[k]||{icon:'📦',name:'其他',color:'#90A4AE'};const pctM=Math.round(v/mExp.reduce((a,e)=>a+e.amount,0)*100);return `<div style="display:flex;align-items:center;gap:8px;margin-bottom:6px"><span style="width:28px;height:28px;border-radius:7px;background:${cat.color}22;display:flex;align-items:center;justify-content:center;font-size:13px">${cat.icon}</span><div style="flex:1"><div style="font-size:12px;font-weight:500">${cat.name}</div><div class="progress-bar" style="height:5px;margin-top:3px"><div class="fill" style="width:${pctM}%;background:${cat.color}"></div></div></div><span style="font-size:12px;font-weight:600">¥${fmtMoney(v)}</span></div>`}).join('')}</div>`:''}`;
+  const txs=[...state.expense].sort((a,b)=>b.time.localeCompare(a.time)).slice(0,30);
+  const el=document.getElementById('txList');
+  if(!txs.length){el.innerHTML=`<div class="empty" style="padding:30px"><p>暂无消费记录</p></div>`;return}
+  el.innerHTML=txs.map(e=>{const cat=CAT_MAP[e.cat]||{icon:'📦',name:'其他',color:'#90A4AE'};return `<div class="tx-item"><div class="tx-icon" style="background:${cat.color}22">${cat.icon}</div><div class="tx-info"><div class="name">${esc(e.note||cat.name)}</div><div class="time">${fmtDate(e.time.slice(0,10))} · ${cat.name}</div></div><div class="tx-amount">-¥${fmtMoney(e.amount)}</div><div class="mini-btn" onclick="delExpense('${e.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:15px;height:15px"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>`}).join('');
+  renderWeekly('money');
+}
+
+// ===== Render: Potential =====
+function renderPotential(){
+  const list=state.projects.filter(p=>!p.archived);
+  const ltList=state.longterm.filter(p=>!p.archived);
+  const doing=list.filter(p=>p.status==='doing'),done=list.filter(p=>p.status==='done'),todo=list.filter(p=>p.status==='todo');
+  document.getElementById('potStats').innerHTML=`
+    <div class="stat-card green"><div class="icon">🚀</div><div class="num">${doing.length}</div><div class="label">进行中</div></div>
+    <div class="stat-card blue"><div class="icon">📋</div><div class="num">${todo.length}</div><div class="label">未开始</div></div>
+    <div class="stat-card purple"><div class="icon">✅</div><div class="num">${done.length}</div><div class="label">已完成</div></div>
+    <div class="stat-card orange"><div class="icon">🎯</div><div class="num">${ltList.length}</div><div class="label">长期目标</div></div>`;
+  const el=document.getElementById('projList');
+  if(!list.length){el.innerHTML=emptyHTML('还没有项目','添加副业、技能、成长目标')}else{
+    el.innerHTML=list.map(p=>{
+      const stepDone=(p.steps||[]).filter(s=>s.done).length;const stepTotal=(p.steps||[]).length;
+      const pct=stepTotal>0?stepDone/stepTotal*100:(p.status==='done'?100:0);
+      const sm={todo:['未开始','todo'],doing:['进行中','doing'],done:['已完成','done']};const[sl,sc]=sm[p.status]||sm.todo;
+      return `<div class="proj-card">
+        <div class="proj-header"><div class="proj-name">${esc(p.name)}</div><span class="proj-status ${sc}" onclick="cycleStatus('${p.id}')">${sl}</span></div>
+        ${p.desc?`<div class="proj-desc">${esc(p.desc)}</div>`:''}
+        ${(p.steps||[]).length?`<div class="proj-steps">${p.steps.map((s,i)=>`<div class="proj-step"><div class="dot ${s.done?'done':''}" onclick="toggleStep('${p.id}',${i})"></div><div class="stext ${s.done?'done':''}">${esc(s.text)}</div></div>`).join('')}</div>`:''}
+        ${stepTotal>0?`<div class="progress-bar mt8"><div class="fill ${p.status==='done'?'':'purple'}" style="width:${pct}%"></div></div>`:''}
+        <div class="proj-footer"><span style="font-size:12px;color:var(--text2)">${stepDone}/${stepTotal} 步骤 · ${pct.toFixed(0)}%</span>
+        <div style="display:flex;gap:2px"><div class="mini-btn" onclick="openSheet('projectStep','${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 5v14M5 12h14"/></svg></div><div class="mini-btn" onclick="editProject('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div><div class="mini-btn" onclick="delProject('${p.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div></div>
+        <div class="goal-reflect mt8"><div class="rl-label">📝 复盘总结</div><textarea placeholder="项目进展、复盘总结、下一步计划..." onblur="saveProjReflect('${p.id}',this.value)">${esc(p.reflect||'')}</textarea></div>
+      </div>`;
+    }).join('');
+  }
+  // Long-term goals
+  const ltEl=document.getElementById('ltList');
+  if(!ltList.length){ltEl.innerHTML=emptyHTML('还没有长期目标','设定3个月/1年/3年目标，拆解里程碑')}else{
+    ltEl.innerHTML=ltList.map(lt=>{
+      const msDone=(lt.milestones||[]).filter(m=>m.done).length;const msTotal=(lt.milestones||[]).length;
+      const pct=msTotal>0?Math.round(msDone/msTotal*100):0;
+      return `<div class="lt-card ${lt.status||'todo'}">
+        <div class="lt-header"><div class="lt-name">${esc(lt.name)}</div><div class="goal-actions"><div class="mini-btn" onclick="editLT('${lt.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M11 4H4v16h16v-7M18.5 2.5a2.1 2.1 0 013 3L12 15l-4 1 1-4z"/></svg></div><div class="mini-btn" onclick="delLT('${lt.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div></div>
+        <div class="lt-deadline">⏰ 目标期限：${lt.deadline||'未设定'} · ${msDone}/${msTotal} 里程碑 · ${pct}%</div>
+        ${lt.desc?`<div style="font-size:13px;color:var(--text2);margin:6px 0;line-height:1.5">${esc(lt.desc)}</div>`:''}
+        ${(lt.milestones||[]).length?`<div class="lt-milestones">${lt.milestones.map((m,i)=>`<div class="lt-milestone"><div class="ms-dot ${m.done?'done':''}" onclick="toggleMS('${lt.id}',${i})"></div><div class="stext ${m.done?'done':''}" style="${m.done?'text-decoration:line-through;color:var(--text3)':''}">${esc(m.text)}${m.date?` <span style="color:var(--text3);font-size:11px">· ${m.date}</span>`:''}</div></div>`).join('')}</div>`:''}
+        <div class="progress-bar mt8"><div class="fill ${lt.status==='done'?'purple':lt.status==='doing'?'orange':''}" style="width:${pct}%"></div></div>
+        <div class="goal-reflect mt8"><div class="rl-label">📝 阶段复盘</div><textarea placeholder="阶段性进展、复盘、调整方向..." onblur="saveLTReflect('${lt.id}',this.value)">${esc(lt.reflect||'')}</textarea></div>
+      </div>`;
+    }).join('');
+  }
+  renderWeekly('potential');
+}
+
+// ===== Render: Diary =====
+const MOODS=[{e:'😊',l:'开心'},{e:'😌',l:'平静'},{e:'😤',l:'烦躁'},{e:'😢',l:'低落'},{e:'😴',l:'疲惫'},{e:'🥰',l:'幸福'}];
+const DIARY_TAGS=['工作','生活','感情','健康','成长','感悟','吐槽','灵感'];
+let selectedMood=null,tagsSelected=[];
+function renderDiary(){
+  document.getElementById('moodRow').innerHTML=MOODS.map((m,i)=>`<div class="mood-btn ${selectedMood===i?'active':''}" onclick="selectMood(${i})"><span class="emoji">${m.e}</span><span class="mood-label">${m.l}</span></div>`).join('');
+  document.getElementById('diaryTags').innerHTML=DIARY_TAGS.map(t=>`<div class="chip ${tagsSelected.includes(t)?'active':''}" onclick="toggleDiaryTag('${t}')">${t}</div>`).join('');
+  const list=[...state.diary].sort((a,b)=>b.date.localeCompare(a.date));
+  const el=document.getElementById('diaryList');
+  if(!list.length){el.innerHTML=emptyHTML('还没有日记','写下今天的第一篇树洞');return}
+  el.innerHTML=list.map(d=>{
+    const mood=MOODS.find(m=>m.e===d.mood);
+    return `<div class="diary-card">
+      <div class="diary-top"><div class="diary-date">${fmtDate(d.date)}</div><div class="diary-mood">${d.mood||'📝'}</div></div>
+      <div class="diary-text">${esc(d.text)}</div>
+      ${(d.tags||[]).length?`<div class="diary-tags">${d.tags.map(t=>`<span class="goal-tag gray">${t}</span>`).join('')}</div>`:''}
+      <div class="goal-actions" style="margin-top:8px;justify-content:flex-end;display:flex"><div class="mini-btn" onclick="delDiary('${d.id}')"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M3 6h18M8 6V4a2 2 0 012-2h4a2 2 0 012 2v2M19 6l-1 14a2 2 0 01-2 2H8a2 2 0 01-2-2L5 6"/></svg></div></div>
+    </div>`;
+  }).join('');
+}
+function selectMood(i){selectedMood=i;renderDiary()}
+function toggleDiaryTag(t){const idx=tagsSelected.indexOf(t);if(idx>=0)tagsSelected.splice(idx,1);else tagsSelected.push(t);renderDiary()}
+function saveDiary(){
+  const text=document.getElementById('diaryInput').value.trim();
+  if(!text){toast('写点什么吧~');return}
+  const mood=selectedMood!==null?MOODS[selectedMood].e:'📝';
+  state.diary.push({id:uid(),text,mood,tags:[...tagsSelected],date:today()});
+  save();document.getElementById('diaryInput').value='';selectedMood=null;tagsSelected=[];renderDiary();toast('已记录 🌳');
+}
+function delDiary(id){if(!confirm('确定删除这篇日记？'))return;state.diary=state.diary.filter(d=>d.id!==id);save();renderDiary();toast('已删除')}
+
+// ===== Render: Weekly Review =====
+function renderWeekly(type){
+  const wk=weekKey(today());
+  const list=state.weekly.filter(w=>w.type===type).sort((a,b)=>b.week.localeCompare(a.week)).slice(0,5);
+  const elMap={study:'studyWeekly',life:'lifeWeekly',money:'moneyWeekly',potential:'potWeekly'};
+  const el=document.getElementById(elMap[type]);if(!el)return;
+  if(!list.length){el.innerHTML=`<div class="empty" style="padding:20px"><p style="font-size:13px">暂无复盘记录</p></div>`;return}
+  el.innerHTML=list.map(w=>`<div class="weekly-card"><div class="wc-header"><div class="wc-title">📋 ${w.week}</div><div class="wc-date">${fmtDate(w.date)}</div></div><div class="wc-content">${esc(w.content)}</div></div>`).join('');
+}
+
+// ===== News =====
+const NEWS_SOURCES={
+  all:{name:'综合',feeds:[]},
+  finance:{name:'💰 财富',feeds:[
+    {name:'36氪财经',url:'https://36kr.com/feed'},
+    {name:'36氪快讯',url:'https://36kr.com/feed-newsflash'},
+  ]},
+  tech:{name:'🔬 科技',feeds:[
+    {name:'36氪',url:'https://36kr.com/feed'},
+    {name:'IT之家',url:'https://www.ithome.com/rss/'},
+    {name:'少数派',url:'https://sspai.com/feed'},
+  ]},
+  it:{name:'💻 计算机',feeds:[
+    {name:'IT之家',url:'https://www.ithome.com/rss/'},
+    {name:'Hacker News',url:'https://hnrss.org/frontpage'},
+  ]},
+  ai:{name:'🤖 AI',feeds:[
+    {name:'OpenAI Blog',url:'https://openai.com/news/rss.xml'},
+    {name:'HuggingFace',url:'https://huggingface.co/blog/feed.xml'},
+    {name:'arXiv AI',url:'https://rss.arxiv.org/rss/cs.AI'},
+    {name:'arXiv ML',url:'https://rss.arxiv.org/rss/cs.LG'},
+  ]},
+};
+let currentNewsTab='all';
+let newsCache={}; // tab -> {items, time}
+function renderNewsTabs(){
+  document.getElementById('newsTabs').innerHTML=Object.entries(NEWS_SOURCES).map(([k,v])=>
+    `<div class="news-tab ${k===currentNewsTab?'active':''}" onclick="switchNewsTab('${k}')">${v.name}</div>`
+  ).join('');
+}
+function switchNewsTab(k){currentNewsTab=k;renderNewsTabs();loadNews(k)}
+async function loadNews(tab){
+  const el=document.getElementById('newsList');
+  // Check cache (30 min)
+  if(newsCache[tab]&&Date.now()-newsCache[tab].time<1800000){
+    renderNewsItems(newsCache[tab].items,tab);return;
+  }
+  el.innerHTML=`<div class="news-loading"><div class="spinner"></div>正在获取最新资讯...</div>`;
+  const feeds=NEWS_SOURCES[tab].feeds;
+  if(!feeds.length){
+    // "all" tab: fetch from all sources
+    const allFeeds=[...NEWS_SOURCES.finance.feeds.slice(0,1),...NEWS_SOURCES.tech.feeds.slice(0,2),...NEWS_SOURCES.it.feeds.slice(1),...NEWS_SOURCES.ai.feeds.slice(0,2)];
+    const results=await Promise.allSettled(allFeeds.map(f=>fetchRSS(f)));
+    const items=results.filter(r=>r.status==='fulfilled'&&r.value).flatMap(r=>r.value);
+    items.sort((a,b)=>new Date(b.pubDate||0)-new Date(a.pubDate||0));
+    newsCache[tab]={items,time:Date.now()};
+    renderNewsItems(items.slice(0,40),tab);return;
+  }
+  const results=await Promise.allSettled(feeds.map(f=>fetchRSS(f)));
+  let items=results.filter(r=>r.status==='fulfilled'&&r.value).flatMap(r=>r.value);
+  items.sort((a,b)=>new Date(b.pubDate||0)-new Date(a.pubDate||0));
+  newsCache[tab]={items,time:Date.now()};
+  renderNewsItems(items.slice(0,40),tab);
+}
+async function fetchRSS(feed){
+  try{
+    const api=`https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(feed.url)}`;
+    const res=await fetch(api);
+    const data=await res.json();
+    if(data.status==='ok'&&data.items){
+      return data.items.slice(0,15).map(item=>({
+        title:item.title,link:item.link,pubDate:item.pubDate,
+        desc:item.description?item.description.replace(/<[^>]*>/g,'').slice(0,150):'',
+        source:feed.name,thumbnail:item.thumbnail||''
+      }));
+    }
+  }catch(e){console.log('RSS fail:',feed.name,e)}
+  return null;
+}
+function renderNewsItems(items,tab){
+  const el=document.getElementById('newsList');
+  if(!items.length){el.innerHTML=`<div class="empty"><p>暂无资讯，稍后重试</p></div>`;return}
+  el.innerHTML=`<div class="card" style="padding:6px 14px">${items.map(item=>{
+    const dt=item.pubDate?new Date(item.pubDate):null;
+    const timeStr=dt?`${dt.getMonth()+1}/${dt.getDate()} ${String(dt.getHours()).padStart(2,'0')}:${String(dt.getMinutes()).padStart(2,'0')}`:'';
+    return `<div class="news-item" onclick="window.open('${item.link}','_blank')">
+      <div style="flex:1;min-width:0">
+        <div class="news-source">${item.source}</div>
+        <div class="news-title">${esc(item.title)}</div>
+        ${item.desc?`<div class="news-desc">${esc(item.desc)}</div>`:''}
+        <div class="news-time">${timeStr}</div>
+      </div>
+    </div>`;
+  }).join('')}</div>`;
+}
+
+// ===== Actions =====
+function toggleCheckin(type,id){const td=today();const item=state[type].find(s=>s.id===id);if(!item)return;item.checkin[td]=!item.checkin[td];if(!item.checkin[td])delete item.checkin[td];save();type==='study'?renderStudy():renderLife();toast(item.checkin[td]?'打卡成功！💪':'已取消')}
+function saveReflect(type,id,val){const td=today();const item=state[type].find(s=>s.id===id);if(!item)return;if(!item.reflect)item.reflect={};if(val.trim())item.reflect[td]=val.trim();else delete item.reflect[td];save()}
+function delItem(type,id){if(!confirm('确定删除？'))return;state[type]=state[type].filter(s=>s.id!==id);save();type==='study'?renderStudy():renderLife();toast('已删除')}
+function editItem(type,id){const item=state[type].find(s=>s.id===id);if(item)openSheet(type,item)}
+function delExpense(id){state.expense=state.expense.filter(e=>e.id!==id);save();renderMoney();toast('已删除')}
+function toggleStep(pid,i){const p=state.projects.find(x=>x.id===pid);if(!p||!p.steps||!p.steps[i])return;p.steps[i].done=!p.steps[i].done;const done=p.steps.filter(s=>s.done).length;if(done===p.steps.length)p.status='done';else if(done>0)p.status='doing';else p.status='todo';save();renderPotential()}
+function cycleStatus(pid){const p=state.projects.find(x=>x.id===pid);if(!p)return;const o=['todo','doing','done'];p.status=o[(o.indexOf(p.status)+1)%3];save();renderPotential()}
+function saveProjReflect(pid,val){const p=state.projects.find(x=>x.id===pid);if(!p)return;p.reflect=val.trim();save()}
+function delProject(pid){if(!confirm('确定删除？'))return;state.projects=state.projects.filter(p=>p.id!==pid);save();renderPotential();toast('已删除')}
+function editProject(pid){const p=state.projects.find(x=>x.id===pid);if(p)openSheet('project',p)}
+function toggleMS(ltid,i){const lt=state.longterm.find(x=>x.id===ltid);if(!lt||!lt.milestones||!lt.milestones[i])return;lt.milestones[i].done=!lt.milestones[i].done;save();renderPotential()}
+function saveLTReflect(ltid,val){const lt=state.longterm.find(x=>x.id===ltid);if(!lt)return;lt.reflect=val.trim();save()}
+function delLT(ltid){if(!confirm('确定删除此长期目标？'))return;state.longterm=state.longterm.filter(p=>p.id!==ltid);save();renderPotential();toast('已删除')}
+function editLT(ltid){const lt=state.longterm.find(x=>x.id===ltid);if(lt)openSheet('longterm',lt)}
+
+// ===== Sheets =====
+function openSheet(type,data){
+  const sh=document.getElementById('sheet');let html='';
+  if(type==='study'){const d=data||{};
+    html=sheetWrap('学习目标',`
+      <div class="field"><label>目标名称</label><input id="f_name" placeholder="如：英语单词、算法刷题..." value="${esc(d.name||'')}"></div>
+      <div class="field"><label>打卡周期</label><div class="chip-row"><div class="chip ${(!d.period||d.period==='daily')?'active':''}" data-p="daily" onclick="pickChip(this)">每日打卡</div><div class="chip ${d.period==='weekly'?'active':''}" data-p="weekly" onclick="pickChip(this)">每周打卡</div></div></div>
+      <div class="btn-row">${d.id?`<button class="btn btn-danger" onclick="delItem('study','${d.id}');closeSheet()">删除</button>`:''}<button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveStudy('${d.id||''}')">保存</button></div>`);
+  }else if(type==='life'){const d=data||{};
+    html=sheetWrap('自律习惯',`
+      <div class="field"><label>习惯名称</label><input id="f_name" placeholder="如：早睡、喝水、运动、戒糖..." value="${esc(d.name||'')}"></div>
+      <div class="field"><label>提醒时间（可选）</label><input id="f_remind" type="time" value="${d.reminder||''}"></div>
+      <div class="btn-row">${d.id?`<button class="btn btn-danger" onclick="delItem('life','${d.id}');closeSheet()">删除</button>`:''}<button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveLife('${d.id||''}')">保存</button></div>`);
+  }else if(type==='expense'){
+    html=sheetWrap('记一笔',`
+      <div class="field"><label>金额</label><input id="f_amount" type="number" placeholder="0.00" style="font-size:20px;font-weight:700"></div>
+      <div class="field"><label>分类</label><div class="chip-row">${[...CATS,...state.customCats].map((c,i)=>`<div class="chip ${i===0?'active':''}" data-cat="${c.key}" onclick="pickChip(this)">${c.icon} ${c.name}</div>`).join('')}</div></div>
+      <div class="field"><label>备注</label><input id="f_note" placeholder="消费备注（可选）"></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveExpense()">记一笔</button></div>
+      <div style="margin-top:14px"><div class="flex-between"><span style="font-size:13px;color:var(--text2)">自定义分类</span><span style="font-size:13px;color:var(--primary);font-weight:500;cursor:pointer" onclick="openSheet('customCat')">+ 添加</span></div></div>`);
+  }else if(type==='customCat'){
+    html=sheetWrap('新增分类',`
+      <div class="field"><label>分类名称</label><input id="f_catname" placeholder="如：宠物、数码..."></div>
+      <div class="field"><label>图标（输入emoji）</label><input id="f_caticon" placeholder="🐱" value="📦"></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="closeSheet();openSheet('expense')">取消</button><button class="btn btn-primary" onclick="saveCustomCat()">添加</button></div>`);
+  }else if(type==='savings'){const s=state.savings;
+    html=sheetWrap('攒钱目标',`
+      <div class="field"><label>目标金额</label><input id="f_goal" type="number" placeholder="10000" value="${s.goal}"></div>
+      <div class="field"><label>已攒金额</label><input id="f_current" type="number" placeholder="0" value="${s.current}"></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveSavings()">保存</button></div>`);
+  }else if(type==='addSavings'){
+    html=sheetWrap('存钱记录',`
+      <div class="field"><label>存入金额</label><input id="f_saveamt" type="number" placeholder="0.00" style="font-size:20px;font-weight:700"></div>
+      <div class="field"><label>备注</label><input id="f_savenote" placeholder="如：本周省下的奶茶钱"></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="addSavings()">存入</button></div>`);
+  }else if(type==='savingsNote'){
+    html=sheetWrap('省钱心得',`
+      <div class="field"><label>记录你的省钱心得、消费反思</label><textarea id="f_savingsnote" style="min-height:120px" placeholder="如：少点外卖、自带水杯、延迟满足...">${esc(state.savings.note||'')}</textarea></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveSavingsNote()">保存</button></div>`);
+  }else if(type==='project'){const d=data||{};
+    html=sheetWrap('潜力项目',`
+      <div class="field"><label>项目名称</label><input id="f_name" placeholder="如：自媒体副业、Python技能..." value="${esc(d.name||'')}"></div>
+      <div class="field"><label>计划内容</label><textarea id="f_desc" style="min-height:80px" placeholder="项目描述、执行计划...">${esc(d.desc||'')}</textarea></div>
+      <div class="field"><label>执行步骤（每行一条）</label><textarea id="f_steps" style="min-height:80px" placeholder="第一步...&#10;第二步...">${(d.steps||[]).map(s=>s.text).join('\n')}</textarea></div>
+      <div class="btn-row">${d.id?`<button class="btn btn-danger" onclick="delProject('${d.id}');closeSheet()">删除</button>`:''}<button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveProject('${d.id||''}')">保存</button></div>`);
+  }else if(type==='longterm'){const d=data||{};
+    html=sheetWrap('长期目标',`
+      <div class="field"><label>目标名称</label><input id="f_name" placeholder="如：一年内涨薪50%、学完全栈开发..." value="${esc(d.name||'')}"></div>
+      <div class="field"><label>目标描述</label><textarea id="f_desc" style="min-height:60px" placeholder="目标详细描述...">${esc(d.desc||'')}</textarea></div>
+      <div class="field-row">
+        <div class="field"><label>目标期限</label><input id="f_deadline" type="date" value="${d.deadline||''}"></div>
+        <div class="field"><label>状态</label><div class="chip-row"><div class="chip ${(!d.status||d.status==='todo')?'active':''}" data-s="todo" onclick="pickChip(this)">未开始</div><div class="chip ${d.status==='doing'?'active':''}" data-s="doing" onclick="pickChip(this)">进行中</div><div class="chip ${d.status==='done'?'active':''}" data-s="done" onclick="pickChip(this)">已完成</div></div></div>
+      </div>
+      <div class="field"><label>里程碑（每行一条，可附日期 日期|内容）</label><textarea id="f_milestones" style="min-height:80px" placeholder="2026-09|完成基础学习&#10;2026-12|第一个项目上线&#10;2027-06|副业月入过万">${(d.milestones||[]).map(m=>(m.date?m.date+'|':'')+m.text).join('\n')}</textarea></div>
+      <div class="btn-row">${d.id?`<button class="btn btn-danger" onclick="delLT('${d.id}');closeSheet()">删除</button>`:''}<button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveLT('${d.id||''}')">保存</button></div>`);
+  }else if(type==='projectStep'){const p=state.projects.find(x=>x.id===data);if(!p)return;
+    html=sheetWrap('执行步骤',`
+      <div class="field"><label>新增步骤</label><div style="display:flex;gap:8px"><input id="f_step" placeholder="输入步骤..."><button class="btn btn-primary" style="flex:0 0 auto;padding:0 16px" onclick="addStep('${data}')">+</button></div></div>
+      <div id="stepList">${(p.steps||[]).map((s,i)=>`<div class="proj-step"><div class="dot ${s.done?'done':''}" onclick="toggleStep('${data}',${i})"></div><div class="stext ${s.done?'done':''}">${esc(s.text)}</div><div class="mini-btn" onclick="delStep('${data}',${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>`).join('')||'<div style="text-align:center;color:var(--text3);font-size:13px;padding:10px">暂无步骤</div>'}</div>
+      <div class="btn-row"><button class="btn btn-primary" onclick="closeSheet();renderPotential()">完成</button></div>`);
+  }else if(type==='weekly'){const wkType=data;
+    const labels={study:'学习复盘',life:'自律复盘',money:'消费复盘',potential:'成长复盘'};
+    html=sheetWrap(labels[wkType]||'每周复盘',`
+      <div class="field"><label>${weekKey(today())} 复盘内容</label><textarea id="f_weekly" style="min-height:150px" placeholder="本周完成了什么？有哪些收获？哪些需要改进？下周计划..."></textarea></div>
+      <div class="btn-row"><button class="btn btn-ghost" onclick="closeSheet()">取消</button><button class="btn btn-primary" onclick="saveWeekly('${wkType}')">保存复盘</button></div>
+      ${state.weekly.filter(w=>w.type===wkType).sort((a,b)=>b.week.localeCompare(a.week)).slice(0,3).map(w=>`<div class="weekly-card"><div class="wc-header"><div class="wc-title">📋 ${w.week}</div></div><div class="wc-content">${esc(w.content)}</div></div>`).join('')}`);
+  }
+  sh.innerHTML=html;document.getElementById('overlay').classList.add('show');sh.classList.add('show');
+}
+function sheetWrap(t,c){return`<div class="sheet-handle"></div><h3>${t}</h3>${c}`}
+function closeSheet(){document.getElementById('overlay').classList.remove('show');document.getElementById('sheet').classList.remove('show')}
+function pickChip(el){el.parentNode.querySelectorAll('.chip').forEach(c=>c.classList.remove('active'));el.classList.add('active')}
+
+function saveStudy(id){const name=document.getElementById('f_name').value.trim();if(!name){toast('请输入名称');return}const p=document.querySelector('[data-p].active');const period=p?p.dataset.p:'daily';if(id){const item=state.study.find(s=>s.id===id);item.name=name;item.period=period}else{state.study.push({id:uid(),name,period,checkin:{},reflect:{},created:today()})}save();closeSheet();renderStudy();toast('已保存')}
+function saveLife(id){const name=document.getElementById('f_name').value.trim();if(!name){toast('请输入名称');return}const reminder=document.getElementById('f_remind').value;if(id){const item=state.life.find(s=>s.id===id);item.name=name;item.reminder=reminder}else{state.life.push({id:uid(),name,reminder,checkin:{},reflect:{},enabled:true,created:today()})}save();closeSheet();renderLife();toast('已保存')}
+function saveExpense(){const amt=parseFloat(document.getElementById('f_amount').value);if(!amt||amt<=0){toast('请输入金额');return}const cat=document.querySelector('[data-cat].active')?.dataset.cat||'food';const note=document.getElementById('f_note').value.trim();state.expense.push({id:uid(),amount:amt,cat,note,time:now()});save();closeSheet();renderMoney();toast('记账成功 ✓')}
+function saveCustomCat(){const name=document.getElementById('f_catname').value.trim();const icon=document.getElementById('f_caticon').value.trim()||'📦';if(!name){toast('请输入分类名');return}const key='custom_'+uid();state.customCats.push({key,name,icon,color:'#90A4AE'});CAT_MAP[key]={key,name,icon,color:'#90A4AE'};save();closeSheet();openSheet('expense');toast('已添加')}
+function saveSavings(){state.savings.goal=parseFloat(document.getElementById('f_goal').value)||0;state.savings.current=parseFloat(document.getElementById('f_current').value)||0;save();closeSheet();renderMoney();toast('已保存')}
+function addSavings(){const amt=parseFloat(document.getElementById('f_saveamt').value);if(!amt||amt<=0){toast('请输入金额');return}state.savings.current+=amt;state.savingsLog.push({id:uid(),amount:amt,note:document.getElementById('f_savenote').value.trim(),time:now()});save();closeSheet();renderMoney();toast(`存入 ¥${fmtMoney(amt)} ✓`)}
+function saveSavingsNote(){state.savings.note=document.getElementById('f_savingsnote').value.trim();save();closeSheet();renderMoney();toast('已保存')}
+function saveProject(id){const name=document.getElementById('f_name').value.trim();if(!name){toast('请输入名称');return}const desc=document.getElementById('f_desc').value.trim();const stepsRaw=document.getElementById('f_steps').value.trim();const steps=stepsRaw?stepsRaw.split('\n').filter(s=>s.trim()).map(s=>({text:s.trim(),done:false})):[];if(id){const p=state.projects.find(x=>x.id===id);p.name=name;p.desc=desc;const oldSteps=p.steps||[];p.steps=steps.map(ns=>{const old=oldSteps.find(os=>os.text===ns.text);return old||ns})}else{state.projects.push({id:uid(),name,desc,steps,status:'todo',reflect:'',created:today()})}save();closeSheet();renderPotential();toast('已保存')}
+function saveLT(id){const name=document.getElementById('f_name').value.trim();if(!name){toast('请输入目标名称');return}const desc=document.getElementById('f_desc').value.trim();const deadline=document.getElementById('f_deadline').value;const sEl=document.querySelector('[data-s].active');const status=sEl?sEl.dataset.s:'todo';const msRaw=document.getElementById('f_milestones').value.trim();const milestones=msRaw?msRaw.split('\n').filter(s=>s.trim()).map(s=>{const[p,t]=s.split('|').map(x=>x.trim());return{date:p||'',text:t||p,done:false}}):[];if(id){const lt=state.longterm.find(x=>x.id===id);lt.name=name;lt.desc=desc;lt.deadline=deadline;lt.status=status;const oldMS=lt.milestones||[];lt.milestones=milestones.map(ns=>{const old=oldMS.find(os=>os.text===ns.text);return old||ns})}else{state.longterm.push({id:uid(),name,desc,deadline,status,milestones,reflect:'',created:today()})}save();closeSheet();renderPotential();toast('已保存')}
+function addStep(pid){const text=document.getElementById('f_step').value.trim();if(!text)return;const p=state.projects.find(x=>x.id===pid);if(!p.steps)p.steps=[];p.steps.push({text,done:false});save();document.getElementById('f_step').value='';document.getElementById('stepList').innerHTML=p.steps.map((s,i)=>`<div class="proj-step"><div class="dot ${s.done?'done':''}" onclick="toggleStep('${pid}',${i})"></div><div class="stext ${s.done?'done':''}">${esc(s.text)}</div><div class="mini-btn" onclick="delStep('${pid}',${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>`).join('');toast('已添加')}
+function delStep(pid,i){const p=state.projects.find(x=>x.id===pid);p.steps.splice(i,1);save();document.getElementById('stepList').innerHTML=(p.steps||[]).map((s,i)=>`<div class="proj-step"><div class="dot ${s.done?'done':''}" onclick="toggleStep('${pid}',${i})"></div><div class="stext ${s.done?'done':''}">${esc(s.text)}</div><div class="mini-btn" onclick="delStep('${pid}',${i})"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" style="width:14px;height:14px"><path d="M18 6L6 18M6 6l12 12"/></svg></div></div>`).join('')||'<div style="text-align:center;color:var(--text3);font-size:13px;padding:10px">暂无步骤</div>'}
+function saveWeekly(type){const content=document.getElementById('f_weekly').value.trim();if(!content){toast('请输入复盘内容');return}state.weekly.push({id:uid(),type,content,week:weekKey(today()),date:today()});save();closeSheet();if(type==='study')renderStudy();else if(type==='life')renderLife();else if(type==='money')renderMoney();else if(type==='potential')renderPotential();toast('复盘已保存 ✓')}
+
+function emptyHTML(t,s){return`<div class="empty"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor"><path d="M12 2C6.5 2 2 6.5 2 12s4.5 10 10 10 10-4.5 10-10S17.5 2 12 2zM12 8v4M12 16h.01"/></svg><p class="et">${t}</p><p class="es">${s}</p></div>`}
+
+// ===== PWA =====
+let deferredPrompt=null;
+window.addEventListener('beforeinstallprompt',e=>{e.preventDefault();deferredPrompt=e;showInstallBanner()});
+function showInstallBanner(){
+  if(localStorage.getItem('zlv3_install_dismissed'))return;
+  const b=document.createElement('div');b.id='installBanner';
+  b.style.cssText='position:fixed;bottom:calc(74px + var(--safe-bottom));left:50%;transform:translateX(-50%);width:calc(100% - 32px);max-width:448px;background:var(--card);border-radius:16px;box-shadow:0 8px 30px rgba(0,0,0,0.12);padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:150;animation:fade .4s ease';
+  b.innerHTML=`<div style="width:40px;height:40px;border-radius:10px;background:var(--primary-light);display:flex;align-items:center;justify-content:center;font-size:20px;flex-shrink:0">📲</div><div style="flex:1;min-width:0"><div style="font-size:14px;font-weight:600">添加到主屏幕</div><div style="font-size:12px;color:var(--text2)">像App一样全屏使用</div></div><button id="installBtn" style="background:var(--primary);color:#fff;border:none;padding:8px 16px;border-radius:20px;font-size:13px;font-weight:600">安装</button><button id="dismissBtn" style="background:none;border:none;color:var(--text3);font-size:18px;padding:4px">×</button>`;
+  document.body.appendChild(b);
+  document.getElementById('installBtn').onclick=async()=>{if(deferredPrompt){deferredPrompt.prompt();await deferredPrompt.userChoice;deferredPrompt=null;b.remove()}};
+  document.getElementById('dismissBtn').onclick=()=>{localStorage.setItem('zlv3_install_dismissed','1');b.remove()};
+}
+if('serviceWorker' in navigator){window.addEventListener('load',()=>{navigator.serviceWorker.register('sw.js').catch(()=>{})})}
+
+// ===== Init =====
+function init(){
+  const d=fmtDate(today());
+  ['todayDate1','todayDate2','todayDate3','todayDate4','todayDate5','todayDate6'].forEach(id=>{const el=document.getElementById(id);if(el)el.textContent=d});
+  renderStudy();renderLife();renderMoney();renderPotential();renderDiary();renderNewsTabs();
+  switchPage('study');
+}
+init();
+</script>
+</body>
+</html>
